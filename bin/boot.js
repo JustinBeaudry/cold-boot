@@ -50,6 +50,8 @@ const url       = require('url');
 const os        = require('os');
 const pkg       = require('../package.json');
 
+const isDev = process.env.NODE_ENV === 'dev';
+
 const DEFAULTS = {
   git: true,
   npm: true
@@ -167,13 +169,17 @@ function doNpm(opts) {
   newPkg.bugs.url       = formatGitRepoName(newPkg.bugs.url,       git_origin);
   newPkg.repository.url = formatGitRepoName(newPkg.repository.url, git_origin);
 
-  rimraf.sync(path.join(process.cwd(), 'package.json'));
-  fs.writeFileSync(path.join(process.cwd(), 'package.json'), JSON.stringify(newPkg, null, 2) + os.EOL);
+  if (!isDev) {
+    rimraf.sync(path.join(process.cwd(), 'package.json'));
+  }
+  fs.writeFileSync(path.join(process.cwd(), isDev ? 'package.dev.json' : 'package.json'), JSON.stringify(newPkg, null, 2) + os.EOL);
 }
 
 function cleanup() {
-  rimraf.sync(path.join(process.cwd(), 'bin'));
-  rimraf.sync(path.join(process.cwd(), 'LICENSE'));
+  if (!isDev) {
+    rimraf.sync(path.join(process.cwd(), 'bin'));
+    rimraf.sync(path.join(process.cwd(), 'LICENSE'));
+  }
 }
 
 function formatGitRepoName(name, origin) {
