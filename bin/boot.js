@@ -116,9 +116,9 @@ function warm(opts) {
           ''
         ]);
       }];
-      if (opts.git || opts.npm) tasks.push(cleanup);
-      if (opts.npm) tasks.push(doNpm); 
-      if (opts.git) tasks.push(doGit);
+      if (opts.git) tasks.unshift(doGit);
+      if (opts.npm) tasks.unshift(doNpm);
+      if (opts.git || opts.npm) tasks.unshift(cleanup);
       tasks.forEach((task) => task.call(null, answers));
     });
   }); 
@@ -167,11 +167,12 @@ function doNpm(opts) {
   newPkg.bugs.url       = formatGitRepoName(newPkg.bugs.url,       git_origin);
   newPkg.repository.url = formatGitRepoName(newPkg.repository.url, git_origin);
 
-  fs.writeFileSync(path.join(process.cwd(), 'package.dev.json'), JSON.stringify(newPkg, null, 2) + os.EOL);
+  rimraf.sync(path.join(process.cwd(), 'package.json'));
+  fs.writeFileSync(path.join(process.cwd(), 'package.json'), JSON.stringify(newPkg, null, 2) + os.EOL);
 }
 
 function cleanup() {
-  rimraf.sync(path.join(process.cwd(), '_bin'));
+  rimraf.sync(path.join(process.cwd(), 'bin'));
   rimraf.sync(path.join(process.cwd(), 'LICENSE'));
 }
 
