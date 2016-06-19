@@ -61,7 +61,8 @@ const DEV_DEPS = [
   'commander',
   'chalk',
   'inquirer',
-  'rimraf'
+  'rimraf',
+  'nodegit'
 ];
 
 const NAME = `[ColdBoot v${pkg.version}]`;

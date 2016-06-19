@@ -42,7 +42,8 @@
     "stylelint-webpack-plugin": "^0.2.0",
     "webpack": "^1.13.0",
     "webpack-dev-server": "^1.14.1",
-    "webpack-split-by-path": "0.0.8"
+    "webpack-split-by-path": "0.0.8",
+    "nodegit": "^0.13.2"
   },
   "dependencies": {
     "bootstrap": "^3.3.6",
