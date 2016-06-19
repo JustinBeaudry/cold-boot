@@ -87,7 +87,7 @@ function warm(opts) {
     ''
   ]);
 
-  getGitConfigInfo(function(config) {
+  getGitConfigInfo((config) => {
     inquirer.prompt([
       {
         type: 'input',
@@ -111,7 +111,7 @@ function warm(opts) {
         message: 'What is the git address of your projects origin?'
       }
     ]).then((answers) => {
-      let tasks = [function() {
+      let tasks = [() => {
         writeError([
           '',
           (answers.project_name + ' warmed.').toUpperCase(),
@@ -133,12 +133,7 @@ function doGit(opts) {
   ({git_origin} = opts);
   
   rimraf.sync(path.join(process.cwd(), '.git'));
-  gitInit(() => {
-    gitInitialCommit(() => {
-      setGitOrigin(git_origin, () => {
-      });
-    });
-  });  
+  gitInit(() => gitInitialCommit(() => setGitOrigin(git_origin)));
 }
 
 function doNpm(opts) {
