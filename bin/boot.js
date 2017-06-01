@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /*
 
@@ -10,49 +11,30 @@
     * determine if project location is local or remote
     * clone remote project
     * squash commit history (if desired)
-    * have coldboot remove itself
 
  */
 
 const program   = require('commander');
-const chalk     = require('chalk');
 const inquirer  = require('inquirer');
-const rimraf    = require('rimraf');
-const fs        = require('fs');
+const Rx        = require('rxjs');
 const path      = require('path');
-const url       = require('url');
-const os        = require('os');
 const pkg       = require('../package.json');
 
-const isDev = process.env.NODE_ENV === 'dev';
-
-const PROJECT_FILES = [
-  'bin',
-  'LICENSE',
-  'README.md',
-  '.editorconfig',
-  '.gitignore'
-];
+const git       = require('../lib/git');
+const utils     = require('../lib/utils');
 
 program
   .version(pkg.version)
-  .option('-g, --git', 'Clean and re-init Git. Defaults to true')
-  .option('-n, --npm', 'Rename and clear package.json for new project. Default to true')
   .parse(process.argv);
 
-warm(program.git, program.npm);
+warm();
 
 /**
  *
- * @param git
- * @param npm
  */
-function warm(git, npm) {
+function warm() {
 
-  git = git || true;
-  npm = npm || true;
-
-  write([
+  utils.write([
     '',
     `[ColdBoot v${pkg.version}]`,
     ''
@@ -62,62 +44,90 @@ function warm(git, npm) {
     {
       type: 'input',
       name: 'project_name',
-      message: 'What is the name of your project?'
+      message: 'What is the name of your project?',
+      default: () => {
+        return path.basename(process.cwd());
+      }
     },
     {
       type: 'input',
       name: 'author_name',
       message: 'What is your name?',
       default: () => {
-        let defaultName = '';
-        if (config.name) defaultName += config.name;
-        if (config.email) defaultName += ' <' + config.email + '>';
-        return defaultName;
+        return git.config().then((config) => {
+          return config.getString('user.name');
+        });
       }
     },
     {
       type: 'input',
       name: 'git_origin',
-      message: 'What is the address of the git project?'
+      message: 'What is the address of the git project?',
+      filter: git.format,
+      validate: input => {
+        return git.validate(input).then(() => {
+          return true;
+        }, () => {
+          return false;
+        });
+      }
+    },
+    {
+      type: 'input',
+      name: 'git_clone_dest',
+      message: 'Project destination:',
+      default: process.cwd()
+    },
+    {
+      type: 'confirm',
+      name: 'git_clean_history',
+      default: true,
+      message: 'Start with a clean git history?'
+    },
+    {
+      type: 'confirm',
+      name: 'git_initial_commit',
+      default: true,
+      message: 'Create an Initial Commit with the newly cloned repo?'
     }
-  ]).then((answers) => {
-    [doGit, cleanup].forEach((task) => task.call(null, answers));
-  });
+  ])
+    .then(work, error)
+    .then(complete, error);
 }
 
-function doGit(opts) {
-  
-  let git_origin;
-  ({git_origin} = opts);
+function work(opts) {
+  let origin = opts.git_origin;
+  let dest = opts.git_clone_dest;
+  let clean = opts.git_clean_history;
 
-  if (!isDev) {
-    rimraf.sync(path.join(process.cwd(), '.git'));
-  }
-
-  // do git stuff here
-}
-
-function cleanup() {
-  if (!isDev) {
-    PROJECT_FILES.forEach(function(file) {
-      rimraf.sync(path.join(process.cwd(), file));
+  return git.clone(origin, dest)
+    .then(() => {
+      return npm.updatePackage(dest);
+    })
+    .then(() => {
+      if (clean) {
+        return git.cleanHistory(dest);
+      }
+      return Promise.resolve();
+    })
+    .then(() => {
+      return git.setRemote(opts.project_name);
     });
-  }
 }
 
-function write(messages) {
-  if (!Array.isArray(messages)) messages = [messages];
-  console.info(chalk.bold.cyan(messages.join('\n')));
+function complete() {
+  utils.write('Complete!');
+  process.exit(0);
 }
 
-function writeError(messages) {
-  if (!Array.isArray(messages)) messages = [messages];
-  console.error(chalk.bold.red(messages.join('\n')))
+function error(err) {
+  utils.writeError(err);
+  process.exit(1);
 }
 
-process.on('uncaughtException', function(err) {
+process.on('uncaughtException', err => {
   if (err) {
-    writeError(err.stack || err);
+    utils.writeError(err.stack || err);
     process.exit(1);
   }
 })

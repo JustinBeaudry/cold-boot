@@ -1,4 +1,4 @@
 cold-boot
 =========
 
-Bootstrapping for Front-End Projects using ES2015, Webpack, and Redux
+Bootstrap a new project from a seed project hosted on a git repository
