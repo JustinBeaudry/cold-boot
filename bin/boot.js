@@ -16,9 +16,9 @@
 
 const program   = require('commander');
 const inquirer  = require('inquirer');
-const Rx        = require('rxjs');
 const path      = require('path');
 const pkg       = require('../package.json');
+const npm       = require('../lib/npm');
 
 const git       = require('../lib/git');
 const utils     = require('../lib/utils');
