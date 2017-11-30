@@ -91,14 +91,17 @@ function warm() {
       message: 'Create an Initial Commit with the newly cloned repo?'
     }
   ])
-    .then(work, error)
-    .then(complete, error);
+    .then(work)
+    .catch(error)
+    .then(complete)
+    .catch(error)
 }
 
 function work(opts) {
   let origin = opts.git_origin;
   let dest = opts.git_clone_dest;
   let clean = opts.git_clean_history;
+  let projectName = opts.project_name;
 
   return git.clone(origin, dest)
     .then(() => {
@@ -111,7 +114,7 @@ function work(opts) {
       return Promise.resolve();
     })
     .then(() => {
-      return git.setRemote(opts.project_name);
+      return git.setRemote(projectName);
     });
 }
 
